@@ -37,4 +37,4 @@ COPY . .
 
 # Use the full module path
 
-CMD ["opentelemetry-instrument", "python", "-m", "customer_support_agent"]
+CMD ["opentelemetry-instrument", "python", "-m", "customer_support_agent_with_memory"]
