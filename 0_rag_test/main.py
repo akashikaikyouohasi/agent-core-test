@@ -13,7 +13,7 @@ data_source_id = "BMXG7HDVAG"
 model_id = "anthropic.claude-3-5-haiku-20241022-v1:0"
 region = "us-west-2"
 
-agents_client = boto3.client("bedrock-agent", region_name=region)
+#agents_client = boto3.client("bedrock-agent", region_name=region)
 agents_runtime_client = boto3.client("bedrock-agent-runtime", region_name=region)
 bedrock_runtime_client = boto3.client("bedrock-runtime", region_name=region)
 
