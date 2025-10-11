@@ -43,8 +43,11 @@ install:
 
 # 仮想環境のアクティベート方法を表示
 activate:
-	@echo "仮想環境をアクティベート"
-	source .venv/bin/activate
+	@echo "仮想環境をアクティベートするには:"
+	@echo "  source $(VENV)/bin/activate"
+	@echo ""
+	@echo "非アクティベートするには:"
+	@echo "  deactivate"
 
 # キャッシュと一時ファイルの削除
 clean:
