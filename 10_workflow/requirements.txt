@@ -1,0 +1,13 @@
+# AWS Bedrock AgentCore SDK
+bedrock-agentcore
+bedrock-agentcore-starter-toolkit
+
+# AWS SDK
+boto3
+botocore
+
+# 環境変数管理
+python-dotenv
+
+# ユーティリティ
+pydantic
