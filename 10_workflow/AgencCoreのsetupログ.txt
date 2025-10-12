@@ -1,0 +1,76 @@
+(.venv) yusuke@MacBookAir 10_workflow % make agentcore-setup
+AgentCoreのセットアップを開始...
+agentcore configure --entrypoint agents.py
+Configuring Bedrock AgentCore...
+Entrypoint parsed: file=/Users/yusuke/github/agent-core-test/10_workflow/agents.py, bedrock_agentcore_name=agents
+Agent name: agents
+
+🔐 Execution Role
+Press Enter to auto-create execution role, or provide execution role ARN/name to use existing
+Execution role ARN/name (or press Enter to auto-create):
+✓ Will auto-create execution role
+
+🏗️  ECR Repository
+Press Enter to auto-create ECR repository, or provide ECR Repository URI to use existing
+ECR Repository URI (or press Enter to auto-create):
+✓ Will auto-create ECR repository
+
+🔍 Detected dependency file: requirements.txt
+Press Enter to use this file, or type a different path (use Tab for autocomplete):
+Path or Press Enter to use detected dependency file:
+✓ Using detected file: requirements.txt
+
+🔐 Authorization Configuration
+By default, Bedrock AgentCore uses IAM authorization.
+Configure OAuth authorizer instead? (yes/no) [no]:
+✓ Using default IAM authorization
+
+🔒 Request Header Allowlist
+Configure which request headers are allowed to pass through to your agent.
+Common headers: Authorization, X-Amzn-Bedrock-AgentCore-Runtime-Custom-*
+Configure request header allowlist? (yes/no) [no]:
+✓ Using default request header configuration
+Configuring BedrockAgentCore agent: agents
+
+🧠 Memory Configuration
+✓ Short-term memory is enabled by default
+  • Stores conversations within sessions
+  • Provides immediate context recall
+
+Optional: Long-term memory
+  • Extracts user preferences across sessions
+  • Remembers facts and patterns
+  • Creates session summaries
+  • Note: Takes 60-90 seconds to process
+
+Enable long-term memory extraction? (yes/no) [no]:
+✓ Using short-term memory only
+Will create new memory with mode: STM_ONLY
+Memory configuration: Short-term memory only
+Generated .dockerignore
+Generated Dockerfile: /Users/yusuke/github/agent-core-test/10_workflow/Dockerfile
+Generated .dockerignore: /Users/yusuke/github/agent-core-test/10_workflow/.dockerignore
+Setting 'agents' as default agent
+╭───────────────────────────────────────────────────────── Configuration Success ──────────────────────────────────────────────────────────╮
+│ Configuration Complete                                                                                                                   │
+│                                                                                                                                          │
+│ Agent Details:                                                                                                                           │
+│ Agent Name: agents                                                                                                                       │
+│ Runtime: Docker                                                                                                                          │
+│ Region: ap-northeast-1                                                                                                                   │
+│ Account: 206863353204                                                                                                                    │
+│                                                                                                                                          │
+│ Configuration:                                                                                                                           │
+│ Execution Role: None                                                                                                                     │
+│ ECR Repository: Auto-create                                                                                                              │
+│ Authorization: IAM (default)                                                                                                             │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│ Memory: Short-term memory (30-day retention)                                                                                             │
+│                                                                                                                                          │
+│ 📄 Config saved to: /Users/yusuke/github/agent-core-test/10_workflow/.bedrock_agentcore.yaml                                             │
+│                                                                                                                                          │
+│ Next Steps:                                                                                                                              │
+│    agentcore launch                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+(.venv) yusuke@MacBookAir 10_workflow %

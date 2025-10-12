@@ -6,6 +6,9 @@ PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 UV := uv
 
+# エントリーポイント
+ENTRYPOINT := agents.py
+
 # デフォルトターゲット
 help:
 	@echo "利用可能なコマンド:"
@@ -90,8 +93,45 @@ deploy:
 		exit 1; \
 	fi
 	@echo "AgentCoreへのデプロイを開始..."
-	$(PYTHON) deploy_workflow.py
+	agentcore launch
 
 # ログを表示
 logs:
 	tail -f *.log 2>/dev/null || echo "ログファイルが見つかりません"
+
+# AgentCoreのセットアップ
+agentcore-setup:
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
+		exit 1; \
+	fi
+	@echo "AgentCoreのセットアップを開始..."
+	agentcore configure --entrypoint $(ENTRYPOINT)
+agentcore-local:
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
+		exit 1; \
+	fi
+	@echo "AgentCoreのローカル起動を開始..."
+	agentcore launch --local
+agentcore-local-test:
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
+		exit 1; \
+	fi
+	@echo "AgentCoreのローカルテストを開始..."
+	agentcore invoke --local '{"prompt": "１たす１は？"}'
+agentcore-status:
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
+		exit 1; \
+	fi
+	@echo "AgentCoreのステータスを表示..."
+	agentcore status
+agentcore-invoke:
+	@if [ ! -d "$(VENV)" ]; then \
+		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
+		exit 1; \
+	fi
+	@echo "AgentCoreへのリクエストを送信..."
+	agentcore invoke '{"prompt": "１たす１は？"}'
