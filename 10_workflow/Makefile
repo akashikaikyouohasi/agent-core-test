@@ -86,52 +86,32 @@ test:
 	fi
 	$(PYTHON) -m pytest tests/ -v
 
-# AgentCoreにデプロイ
-deploy:
-	@if [ ! -d "$(VENV)" ]; then \
-		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
-		exit 1; \
-	fi
-	@echo "AgentCoreへのデプロイを開始..."
-	agentcore launch
-
 # ログを表示
 logs:
 	tail -f *.log 2>/dev/null || echo "ログファイルが見つかりません"
 
-# AgentCoreのセットアップ
-agentcore-setup:
+check-venv:
 	@if [ ! -d "$(VENV)" ]; then \
 		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
 		exit 1; \
 	fi
+
+# AgentCoreのセットアップ
+agentcore-setup: check-venv
 	@echo "AgentCoreのセットアップを開始..."
 	agentcore configure --entrypoint $(ENTRYPOINT)
-agentcore-local:
-	@if [ ! -d "$(VENV)" ]; then \
-		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
-		exit 1; \
-	fi
+agentcore-local: check-venv
 	@echo "AgentCoreのローカル起動を開始..."
 	agentcore launch --local
-agentcore-local-test:
-	@if [ ! -d "$(VENV)" ]; then \
-		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
-		exit 1; \
-	fi
+agentcore-local-test: check-venv
 	@echo "AgentCoreのローカルテストを開始..."
 	agentcore invoke --local '{"prompt": "１たす１は？"}'
-agentcore-status:
-	@if [ ! -d "$(VENV)" ]; then \
-		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
-		exit 1; \
-	fi
+agentcore-deploy: check-venv
+	@echo "AgentCoreへのデプロイを開始..."
+	agentcore launch
+agentcore-status: check-venv
 	@echo "AgentCoreのステータスを表示..."
 	agentcore status
-agentcore-invoke:
-	@if [ ! -d "$(VENV)" ]; then \
-		echo "❌ 仮想環境が見つかりません。'make setup' と 'make install' を実行してください"; \
-		exit 1; \
-	fi
+agentcore-invoke: check-venv
 	@echo "AgentCoreへのリクエストを送信..."
 	agentcore invoke '{"prompt": "１たす１は？"}'
