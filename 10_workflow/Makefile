@@ -108,7 +108,7 @@ agentcore-local: check-venv
 	@echo "AgentCoreのローカル起動を開始..."
 	@echo "⚠️  Ctrl+C で停止できます"
 	@echo "⚠️  別のターミナルで 'make agentcore-local-test' を実行してテストしてください"
-	agentcore launch --local
+	agentcore launch --local --env OTEL_SDK_DISABLED=true 
 
 agentcore-local-test: check-venv
 	@echo "📡 ローカルサーバー(localhost:8080)の接続を確認中..."

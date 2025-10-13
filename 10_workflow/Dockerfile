@@ -15,8 +15,6 @@ ENV UV_SYSTEM_PYTHON=1 \
     AWS_REGION=us-west-2 \
     AWS_DEFAULT_REGION=us-west-2
 
-
-
 COPY requirements.txt requirements.txt
 # Install from requirements file
 RUN uv pip install -r requirements.txt
