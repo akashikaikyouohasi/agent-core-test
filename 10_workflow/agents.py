@@ -4,6 +4,9 @@ from strands import Agent, tool
 from strands_tools import calculator, current_time
 from strands.models import BedrockModel
 
+# tools.py からのインポート例
+from tools.weather import get_tools
+
 # AgentCore SDK をインポートします
 from bedrock_agentcore.runtime import BedrockAgentCoreApp, RequestContext
 
@@ -52,7 +55,7 @@ bedrock_model = BedrockModel(
 
 agent = Agent(
     model=bedrock_model,
-    tools=[calculator, current_time, letter_counter]
+    tools=[calculator, current_time, letter_counter, *get_tools()]
 )
 
 def local_test():
@@ -76,7 +79,6 @@ def invoke(payload: dict, context: RequestContext) -> dict:
         "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
     )
     result = agent(user_message)
-    
     # result.message が文字列の場合とオブジェクトの場合に対応
     message_content = result.message if isinstance(result.message, str) else str(result.message)
     

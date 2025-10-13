@@ -102,15 +102,32 @@ check-venv:
 agentcore-setup: check-venv
 	@echo "AgentCoreのセットアップを開始..."
 	agentcore configure --entrypoint $(ENTRYPOINT) --region $(REGION) --name test_agent
+
+# ローカルサーバーを起動（フォアグラウンド）
 agentcore-local: check-venv
 	@echo "AgentCoreのローカル起動を開始..."
+	@echo "⚠️  Ctrl+C で停止できます"
+	@echo "⚠️  別のターミナルで 'make agentcore-local-test' を実行してテストしてください"
 	agentcore launch --local
+
 agentcore-local-test: check-venv
+	@echo "📡 ローカルサーバー(localhost:8080)の接続を確認中..."
+	@if curl -s http://localhost:8080/health > /dev/null 2>&1 || nc -z localhost 8080 > /dev/null 2>&1; then \
+		echo "✅ ローカルサーバーが起動しています"; \
+	else \
+		echo "❌ ローカルサーバーが起動していません"; \
+		echo ""; \
+		echo "別のターミナルで以下を実行してサーバーを起動してください:"; \
+		echo "  make agentcore-local"; \
+		exit 1; \
+	fi
 	@echo "AgentCoreのローカルテストを開始..."
 	agentcore invoke --local '{"prompt": "１たす１は？"}'
+	agentcore invoke --local '{"prompt": "私が今いる場所の天気は？"}'
 agentcore-deploy: check-venv
 	@echo "AgentCoreへのデプロイを開始..."
 	agentcore launch
+
 agentcore-status: check-venv
 	@echo "AgentCoreのステータスを表示..."
 	agentcore status
