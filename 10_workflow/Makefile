@@ -134,3 +134,4 @@ agentcore-status: check-venv
 agentcore-invoke-test: check-venv
 	@echo "AgentCoreへのリクエストを送信..."
 	agentcore invoke '{"prompt": "１たす１は？"}'
+	agentcore invoke '{"prompt": "私が今いる場所の天気は？"}'
