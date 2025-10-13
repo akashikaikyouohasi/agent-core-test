@@ -1,0 +1,60 @@
+default_agent: customer_support_agent_with_memory
+agents:
+  customer_support_agent:
+    name: customer_support_agent
+    entrypoint: customer_support_agent.py
+    platform: linux/arm64
+    container_runtime: docker
+    aws:
+      execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKRuntime-us-east-1-aa96c3a063
+      execution_role_auto_create: false
+      account: '206863353204'
+      region: us-east-1
+      ecr_repository: 206863353204.dkr.ecr.us-east-1.amazonaws.com/bedrock-agentcore-customer_support_agent
+      ecr_auto_create: false
+      network_configuration:
+        network_mode: PUBLIC
+      protocol_configuration:
+        server_protocol: HTTP
+      observability:
+        enabled: true
+    bedrock_agentcore:
+      agent_id: customer_support_agent-OzLAEpCvjW
+      agent_arn: arn:aws:bedrock-agentcore:us-east-1:206863353204:runtime/customer_support_agent-OzLAEpCvjW
+      agent_session_id: 15544ec9-a0be-4031-868b-6c0cefc5b070
+    codebuild:
+      project_name: bedrock-agentcore-customer_support_agent-builder
+      execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKCodeBuild-us-east-1-aa96c3a063
+      source_bucket: bedrock-agentcore-codebuild-sources-206863353204-us-east-1
+    authorizer_configuration: null
+    oauth_configuration:
+      workload_name: workload-b36e86a8
+  customer_support_agent_with_memory:
+    name: customer_support_agent_with_memory
+    entrypoint: customer_support_agent_with_memory.py
+    platform: linux/arm64
+    container_runtime: docker
+    aws:
+      execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKRuntime-us-east-1-a2348b5130
+      execution_role_auto_create: false
+      account: '206863353204'
+      region: us-east-1
+      ecr_repository: 206863353204.dkr.ecr.us-east-1.amazonaws.com/bedrock-agentcore-customer_support_agent_with_memory
+      ecr_auto_create: false
+      network_configuration:
+        network_mode: PUBLIC
+      protocol_configuration:
+        server_protocol: HTTP
+      observability:
+        enabled: true
+    bedrock_agentcore:
+      agent_id: customer_support_agent_with_memory-0MUnk34qG6
+      agent_arn: arn:aws:bedrock-agentcore:us-east-1:206863353204:runtime/customer_support_agent_with_memory-0MUnk34qG6
+      agent_session_id: 0fc1d860-d32f-4c79-bd7b-091fd225bc38
+    codebuild:
+      project_name: bedrock-agentcore-customer_support_agent_with_memory-builder
+      execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKCodeBuild-us-east-1-a2348b5130
+      source_bucket: bedrock-agentcore-codebuild-sources-206863353204-us-east-1
+    authorizer_configuration: null
+    oauth_configuration:
+      workload_name: workload-e9e5affe

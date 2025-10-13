@@ -8,6 +8,8 @@ UV := uv
 
 # エントリーポイント
 ENTRYPOINT := agents.py
+# AWS
+REGION := us-west-2
 
 # デフォルトターゲット
 help:
@@ -99,7 +101,7 @@ check-venv:
 # AgentCoreのセットアップ
 agentcore-setup: check-venv
 	@echo "AgentCoreのセットアップを開始..."
-	agentcore configure --entrypoint $(ENTRYPOINT)
+	agentcore configure --entrypoint $(ENTRYPOINT) --region $(REGION) --name test_agent
 agentcore-local: check-venv
 	@echo "AgentCoreのローカル起動を開始..."
 	agentcore launch --local
@@ -112,6 +114,6 @@ agentcore-deploy: check-venv
 agentcore-status: check-venv
 	@echo "AgentCoreのステータスを表示..."
 	agentcore status
-agentcore-invoke: check-venv
+agentcore-invoke-test: check-venv
 	@echo "AgentCoreへのリクエストを送信..."
 	agentcore invoke '{"prompt": "１たす１は？"}'

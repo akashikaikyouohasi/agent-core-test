@@ -1,0 +1,30 @@
+default_agent: test
+agents:
+  test:
+    name: test
+    entrypoint: agentcore.py
+    platform: linux/arm64
+    container_runtime: docker
+    aws:
+      execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKRuntime-us-east-1-9f86d08188
+      execution_role_auto_create: false
+      account: '206863353204'
+      region: us-east-1
+      ecr_repository: 206863353204.dkr.ecr.us-east-1.amazonaws.com/bedrock-agentcore-test
+      ecr_auto_create: false
+      network_configuration:
+        network_mode: PUBLIC
+      protocol_configuration:
+        server_protocol: HTTP
+      observability:
+        enabled: true
+    bedrock_agentcore:
+      agent_id: test-IZBUCp5Suw
+      agent_arn: arn:aws:bedrock-agentcore:us-east-1:206863353204:runtime/test-IZBUCp5Suw
+      agent_session_id: null
+    codebuild:
+      project_name: bedrock-agentcore-test-builder
+      execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKCodeBuild-us-east-1-9f86d08188
+      source_bucket: bedrock-agentcore-codebuild-sources-206863353204-us-east-1
+    authorizer_configuration: null
+    oauth_configuration: null
