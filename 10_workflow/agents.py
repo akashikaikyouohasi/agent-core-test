@@ -1,7 +1,7 @@
 import logging
 import os
 from strands import Agent, tool
-from strands_tools import calculator, current_time
+from strands_tools import calculator, current_time, workflow
 from strands.models import BedrockModel
 
 # tools.py からのインポート例
@@ -42,20 +42,58 @@ def letter_counter(word: str, letter: str) -> int:
 
     return word.lower().count(letter.lower())
 
+
 # AgentCore アプリケーションを作成します
 app = BedrockAgentCoreApp()
 
 # Create a BedrockModel
 bedrock_model = BedrockModel(
-    model_id="global.anthropic.claude-sonnet-4-20250514-v1:0",
+    #model_id="global.anthropic.claude-sonnet-4-20250514-v1:0",
+    model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
     region_name="us-west-2",
     temperature=0.3,
 )
 
 agent = Agent(
     model=bedrock_model,
-    tools=[calculator, current_time, letter_counter, *get_tools()]
+    tools=[workflow]
+    #tools=[calculator, current_time, letter_counter, workflow, *get_tools()]
 )
+
+# Create a multi-agent workflow
+agent.tool.workflow(
+    action="create",
+    workflow_id="data_analysis",
+    tasks=[
+        {
+            "task_id": "data_extraction",
+            "description": "Extract key financial data from the quarterly report",
+            "system_prompt": "You extract and structure financial data from reports.",
+            "priority": 5
+        },
+        {
+            "task_id": "trend_analysis",
+            "description": "Analyze trends in the data compared to previous quarters",
+            "dependencies": ["data_extraction"],
+            "system_prompt": "You identify trends in financial time series.",
+            "priority": 3
+        },
+        {
+            "task_id": "report_generation",
+            "description": "Generate a comprehensive analysis report",
+            "dependencies": ["trend_analysis"],
+            "system_prompt": "You create clear financial analysis reports.",
+            "priority": 2
+        }
+    ]
+)
+
+
+# Execute workflow (parallel processing where possible)
+#agent.tool.workflow(action="start", workflow_id="data_analysis")
+# Check results
+#status = agent.tool.workflow(action="status", workflow_id="data_analysis")
+
 
 def local_test():
     """Local test function to invoke the agent directly"""
@@ -69,6 +107,7 @@ def local_test():
     3. Tell me how many letter R's are in the word "strawberry" 🍓
     """
     agent(message)
+
 
 # エージェントを呼び出すエントリポイント関数を指定します
 @app.entrypoint

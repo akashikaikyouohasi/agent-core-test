@@ -124,6 +124,19 @@ agentcore-local-test: check-venv
 	@echo "AgentCoreのローカルテストを開始..."
 	agentcore invoke --local '{"prompt": "１たす１は？"}'
 	agentcore invoke --local '{"prompt": "私が今いる場所の天気は？"}'
+agentcore-local-test-workflow: check-venv
+	@echo "📡 ローカルサーバー(localhost:8080)の接続を確認中..."
+	@if curl -s http://localhost:8080/health > /dev/null 2>&1 || nc -z localhost 8080 > /dev/null 2>&1; then \
+		echo "✅ ローカルサーバーが起動しています"; \
+	else \
+		echo "❌ ローカルサーバーが起動していません"; \
+		echo ""; \
+		echo "別のターミナルで以下を実行してサーバーを起動してください:"; \
+		echo "  make agentcore-local"; \
+		exit 1; \
+	fi
+	@echo "AgentCoreのworkflowのローカルテストを開始..."
+	agentcore invoke --local '{"prompt": "四半期のレポートを生成してください。"}'
 agentcore-deploy: check-venv
 	@echo "AgentCoreへのデプロイを開始..."
 	agentcore launch
@@ -135,3 +148,6 @@ agentcore-invoke-test: check-venv
 	@echo "AgentCoreへのリクエストを送信..."
 	agentcore invoke '{"prompt": "１たす１は？"}'
 	agentcore invoke '{"prompt": "私が今いる場所の天気は？"}'
+agentcore-invoke-test-workflow: check-venv
+	@echo "AgentCoreへのworkflowリクエストを送信..."
+	agentcore invoke '{"prompt": "四半期のレポートを生成してください。"}'

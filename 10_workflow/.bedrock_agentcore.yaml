@@ -21,7 +21,7 @@ agents:
     bedrock_agentcore:
       agent_id: test_agent-2aQI4YF3ua
       agent_arn: arn:aws:bedrock-agentcore:us-west-2:206863353204:runtime/test_agent-2aQI4YF3ua
-      agent_session_id: 27c13815-8b61-4cd4-8ffc-251de9fe2e8f
+      agent_session_id: 3ef26ec8-21cd-4786-b40a-09f0fda54595
     codebuild:
       project_name: bedrock-agentcore-test_agent-builder
       execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKCodeBuild-us-west-2-8bd92bdc12
