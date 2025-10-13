@@ -10,15 +10,14 @@ from tools.weather import get_tools
 # AgentCore SDK をインポートします
 from bedrock_agentcore.runtime import BedrockAgentCoreApp, RequestContext
 
-# OpenTelemetry メトリクスを無効化
-os.environ["OTEL_SDK_DISABLED"] = "true"
 
 # Enables Strands debug log level
 logging.getLogger("strands").setLevel(logging.DEBUG)
 
 # ログを標準エラー出力にストリームするように設定
 logging.basicConfig(
-    format="%(levelname)s | %(name)s | %(message)s",
+    format="%(asctime)s | %(levelname)-8s | %(name)-20s | %(funcName)s:%(lineno)d | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[logging.StreamHandler()]
 )
 
@@ -81,7 +80,7 @@ def invoke(payload: dict, context: RequestContext) -> dict:
     result = agent(user_message)
     # result.message が文字列の場合とオブジェクトの場合に対応
     message_content = result.message if isinstance(result.message, str) else str(result.message)
-    
+
     return {"result": message_content}
 
 if __name__ == "__main__":
