@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+from typing import AsyncGenerator
 from strands import Agent, tool
 from strands_tools import calculator, current_time, workflow
 from strands.models import BedrockModel
@@ -61,41 +62,6 @@ agent = Agent(
     #tools=[calculator, current_time, letter_counter, workflow, *get_tools()]
 )
 
-# Create a multi-agent workflow
-agent.tool.workflow(
-    action="create",
-    workflow_id="data_analysis",
-    tasks=[
-        {
-            "task_id": "data_extraction",
-            "description": "Extract key financial data from the quarterly report",
-            "system_prompt": "You extract and structure financial data from reports.",
-            "priority": 5
-        },
-        {
-            "task_id": "trend_analysis",
-            "description": "Analyze trends in the data compared to previous quarters",
-            "dependencies": ["data_extraction"],
-            "system_prompt": "You identify trends in financial time series.",
-            "priority": 3
-        },
-        {
-            "task_id": "report_generation",
-            "description": "Generate a comprehensive analysis report",
-            "dependencies": ["trend_analysis"],
-            "system_prompt": "You create clear financial analysis reports.",
-            "priority": 2
-        }
-    ]
-)
-
-
-# Execute workflow (parallel processing where possible)
-#agent.tool.workflow(action="start", workflow_id="data_analysis")
-# Check results
-#status = agent.tool.workflow(action="status", workflow_id="data_analysis")
-
-
 def local_test():
     """Local test function to invoke the agent directly"""
     print("=== エージェントのローカルテスト ===\n")
@@ -117,7 +83,7 @@ def workflow_test():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     workflow_id = f"data_analysis_{timestamp}"
     print(f"Workflow ID: {workflow_id}\n")
-    
+
     # Create the workflow
     agent.tool.workflow(
         action="create",
@@ -153,8 +119,9 @@ def workflow_test():
 
 # エージェントを呼び出すエントリポイント関数を指定します
 @app.entrypoint
-def invoke(payload: dict, context: RequestContext) -> dict:
+async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str, None]:
     """Handler for agent invocation"""
+    # print("=== 同期エージェントの呼び出し ===\n") 
     # user_message = payload.get(
     #     "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
     # )
@@ -163,8 +130,27 @@ def invoke(payload: dict, context: RequestContext) -> dict:
     # message_content = result.message if isinstance(result.message, str) else str(result.message)
     #return {"result": message_content}
 
-    workflow_test()
-    return "OK"
+    #workflow_test()
+    #return "OK"
+
+    print("=== エージェントのストリーミング呼び出し by async ===\n") 
+    streaming_agent = Agent(
+        model=bedrock_model,
+        tools=[workflow]
+    )
+    user_message = payload.get(
+        "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
+    )
+    stream = streaming_agent.stream_async(user_message)
+
+    async for event in stream:
+        if "data" in event:
+            print(event["data"], end="")
+            yield event["data"]          # Stream data chunks
+        elif "message" in event:
+            print(event["message"], end="")
+            yield event["message"]       # Stream message parts
+    
 
 if __name__ == "__main__":
     app.run()
