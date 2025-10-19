@@ -158,9 +158,9 @@ def workflow_test():
     #return "OK"
 
 
-#@app.entrypoint
-#async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str, None]:
-#    """Handler for agent invocation"""
+@app.entrypoint
+async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str, None]:
+    """Handler for agent invocation"""
     # print("=== 同期エージェントの呼び出し ===\n") 
     # user_message = payload.get(
     #     "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
@@ -192,28 +192,85 @@ def workflow_test():
     #         print(event["message"], end="")
     #         yield event["message"]       # Stream message parts
     #========================================================================
-
-
-@app.entrypoint
-def invoke(payload: dict, context: RequestContext):
-    print("=== コールバックハンドラーありのエージェントの呼び出し ===\n")
-    agent_with_all_callback = Agent(
-        model=bedrock_model,
-        callback_handler=event_loop_tracker
+    print("=== エージェントのストリーミング呼び出し by async ===\n") 
+    streaming_agent = Agent(
+        model=bedrock_model
     )
     user_message = payload.get(
         "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
     )
+    stream = streaming_agent.stream_async(user_message)
+
+    # ストリーミングデータを蓄積するための変数
+    accumulated_data = []
+    event_logs = []
+
+    async for event in stream:
+        # Track event loop lifecycle
+        if event.get("init_event_loop", False):
+            print("🔄 Event loop initialized")
+            event_logs.append("🔄 Event loop initialized")
+            yield "🔄 Event loop initialized\n"
+        elif event.get("start_event_loop", False):
+            print("▶️ Event loop cycle starting")
+            event_logs.append("▶️ Event loop cycle starting")
+            yield "▶️ Event loop cycle starting\n"
+        elif "message" in event:
+            print(f"📬 New message created: {event['message']['role']}")
+            event_logs.append(f"📬 New message created: {event['message']['role']}")
+            yield f"📬 New message created: {event['message']['role']}\n"
+        elif event.get("complete", False):
+            print("✅ Cycle completed")
+            event_logs.append("✅ Cycle completed")
+            yield "✅ Cycle completed\n"
+        elif event.get("force_stop", False):
+            print(f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}")
+            event_logs.append(f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}")
+            yield f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}\n"
+
+        # Track tool usage
+        if "current_tool_use" in event and event["current_tool_use"].get("name"):
+            tool_name = event["current_tool_use"]["name"]
+            print(f"🔧 Using tool: {tool_name}")
+            event_logs.append(f"🔧 Using tool: {tool_name}")
+            yield f"🔧 Using tool: {tool_name}\n"
+
+        # データを蓄積
+        if "data" in event:
+            accumulated_data.append(event["data"])
+            # Show only a snippet of text to keep output clean
+            data_snippet = event["data"][:20] + ("..." if len(event["data"]) > 20 else "")
+            print(f"📟 Text: {data_snippet}")
+            yield f"📟 Text: {data_snippet}\n"
+
+    # 最後にまとめて出力
+    full_response = "".join(accumulated_data)
+    summary = f"\n\n{'='*50}\n📊 最終結果のまとめ\n{'='*50}\n\n{full_response}\n\n{'='*50}\n"
+    print(summary)
+    yield summary
+    #========================================================================
+
+
+# @app.entrypoint
+# def invoke(payload: dict, context: RequestContext):
+#     print("=== コールバックハンドラーありのエージェントの呼び出し ===\n")
+#     agent_with_all_callback = Agent(
+#         model=bedrock_model,
+#         callback_handler=event_loop_tracker
+#     )
+#     user_message = payload.get(
+#         "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
+#     )
     
-    # 同期実行して結果を取得
-    result = agent_with_all_callback(user_message)
-    print(f"サーバー側の結果: {result}")  # サーバー側コンソールに表示
+#     # 同期実行して結果を取得
+#     result = agent_with_all_callback(user_message)
+#     print(f"サーバー側の結果: {result}")  # サーバー側コンソールに表示
     
-    # result.messageを文字列に変換
-    message_content = result.message if isinstance(result.message, str) else str(result.message)
+#     # result.messageを文字列に変換
+#     message_content = result.message if isinstance(result.message, str) else str(result.message)
     
-    # クライアント側に返す
-    return message_content
+#     # クライアント側に返す
+#     return message_content
 
 
 
