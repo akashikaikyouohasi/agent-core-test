@@ -3,6 +3,7 @@
 # 仮想環境のパス
 VENV := .venv
 PYTHON := $(VENV)/bin/python
+AGENTCORE := $(VENV)/bin/agentcore
 PIP := $(VENV)/bin/pip
 UV := uv
 
@@ -101,14 +102,14 @@ check-venv:
 # AgentCoreのセットアップ
 agentcore-setup: check-venv
 	@echo "AgentCoreのセットアップを開始..."
-	agentcore configure --entrypoint $(ENTRYPOINT) --region $(REGION) --name test_agent
+	${AGENTCORE} configure --entrypoint $(ENTRYPOINT) --region $(REGION) --name test_agent
 
 # ローカルサーバーを起動（フォアグラウンド）
 agentcore-local: check-venv
 	@echo "AgentCoreのローカル起動を開始..."
 	@echo "⚠️  Ctrl+C で停止できます"
 	@echo "⚠️  別のターミナルで 'make agentcore-local-test' を実行してテストしてください"
-	agentcore launch --local --env OTEL_SDK_DISABLED=true 
+	${AGENTCORE} launch --local --env OTEL_SDK_DISABLED=true
 
 agentcore-local-test: check-venv
 	@echo "📡 ローカルサーバー(localhost:8080)の接続を確認中..."
@@ -122,8 +123,23 @@ agentcore-local-test: check-venv
 		exit 1; \
 	fi
 	@echo "AgentCoreのローカルテストを開始..."
-	agentcore invoke --local '{"prompt": "１たす１は？"}'
-	agentcore invoke --local '{"prompt": "私が今いる場所の天気は？"}'
+	@echo ""
+	@echo "⏱️  テスト1: １たす１は？"
+	@date +"%Y-%m-%d %H:%M:%S"
+	@START=$$(date +%s); \
+	${AGENTCORE} invoke --local '{"prompt": "１たす１は？"}'; \
+	END=$$(date +%s); \
+	DURATION=$$((END - START)); \
+	echo ""; \
+	echo "⏱️  実行時間: $${DURATION}秒"
+#	@echo ""
+#	@echo "⏱️  テスト2: 私が今いる場所の天気は？"
+#	@START=$$(date +%s); \
+#	${AGENTCORE} invoke --local '{"prompt": "私が今いる場所の天気は？"}'; \
+#	END=$$(date +%s); \
+#	DURATION=$$((END - START)); \
+#	echo ""; \
+#	echo "⏱️  実行時間: $${DURATION}秒"
 agentcore-local-test-workflow: check-venv
 	@echo "📡 ローカルサーバー(localhost:8080)の接続を確認中..."
 	@if curl -s http://localhost:8080/health > /dev/null 2>&1 || nc -z localhost 8080 > /dev/null 2>&1; then \
@@ -136,18 +152,18 @@ agentcore-local-test-workflow: check-venv
 		exit 1; \
 	fi
 	@echo "AgentCoreのworkflowのローカルテストを開始..."
-	agentcore invoke --local '{"prompt": "四半期のレポートを生成してください。"}'
+	${AGENTCORE} invoke --local '{"prompt": "四半期のレポートを生成してください。"}'
 agentcore-deploy: check-venv
 	@echo "AgentCoreへのデプロイを開始..."
-	agentcore launch
+	agent${AGENTCORE}core launch
 
 agentcore-status: check-venv
 	@echo "AgentCoreのステータスを表示..."
-	agentcore status
+	${AGENTCORE} status
 agentcore-invoke-test: check-venv
 	@echo "AgentCoreへのリクエストを送信..."
-	agentcore invoke '{"prompt": "１たす１は？"}'
-	agentcore invoke '{"prompt": "私が今いる場所の天気は？"}'
+	${AGENTCORE} invoke '{"prompt": "１たす１は？"}'
+	${AGENTCORE} invoke '{"prompt": "私が今いる場所の天気は？"}'
 agentcore-invoke-test-workflow: check-venv
 	@echo "AgentCoreへのworkflowリクエストを送信..."
-	agentcore invoke '{"prompt": "四半期のレポートを生成してください。"}'
+	${AGENTCORE} invoke '{"prompt": "四半期のレポートを生成してください。"}'
