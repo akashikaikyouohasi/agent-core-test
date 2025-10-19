@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 from strands import Agent, tool
 from strands_tools import calculator, current_time, workflow
 from strands.models import BedrockModel
@@ -109,18 +110,61 @@ def local_test():
     agent(message)
 
 
+def workflow_test():
+    """Local test function to invoke the workflow tool directly"""
+    print("=== ワークフローのローカルテスト ===\n")
+    # ユニークなIDを日付ベースで生成（例: data_analysis_20251019_143025）
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    workflow_id = f"data_analysis_{timestamp}"
+    print(f"Workflow ID: {workflow_id}\n")
+    
+    # Create the workflow
+    agent.tool.workflow(
+        action="create",
+        workflow_id=workflow_id,
+        tasks=[
+            {
+                "task_id": "data_extraction",
+                "description": "Extract key financial data from the quarterly report",
+                "system_prompt": "You extract and structure financial data from reports.",
+                "priority": 5
+            },
+            {
+                "task_id": "trend_analysis",
+                "description": "Analyze trends in the data compared to previous quarters",
+                "dependencies": ["data_extraction"],
+                "system_prompt": "You identify trends in financial time series.",
+                "priority": 3
+            },
+            {
+                "task_id": "report_generation",
+                "description": "Generate a comprehensive analysis report",
+                "dependencies": ["trend_analysis"],
+                "system_prompt": "You create clear financial analysis reports.",
+                "priority": 2
+            }
+        ]
+    )
+    # Start the workflow
+    agent.tool.workflow(action="start", workflow_id=workflow_id)
+    # Check results
+    status = agent.tool.workflow(action="status", workflow_id=workflow_id)
+    print(f"Workflow Status: {status}")
+
 # エージェントを呼び出すエントリポイント関数を指定します
 @app.entrypoint
 def invoke(payload: dict, context: RequestContext) -> dict:
     """Handler for agent invocation"""
-    user_message = payload.get(
-        "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
-    )
-    result = agent(user_message)
-    # result.message が文字列の場合とオブジェクトの場合に対応
-    message_content = result.message if isinstance(result.message, str) else str(result.message)
+    # user_message = payload.get(
+    #     "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
+    # )
+    # result = agent(user_message)
+    # # result.message が文字列の場合とオブジェクトの場合に対応
+    # message_content = result.message if isinstance(result.message, str) else str(result.message)
+    #return {"result": message_content}
 
-    return {"result": message_content}
+    workflow_test()
+    return "OK"
 
 if __name__ == "__main__":
     app.run()
