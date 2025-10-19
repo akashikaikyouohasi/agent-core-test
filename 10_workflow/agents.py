@@ -347,6 +347,41 @@ async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str,
     print(summary)
     yield summary
 
+    agent1_result = summary
+
+    streaming_agent_2 = Agent(
+        model=bedrock_model,
+            system_prompt="結果が素数か判定するエージェントです。"
+    )
+    stream_2 = streaming_agent_2.stream_async(agent1_result)
+
+    # ストリーミングデータを蓄積するための変数
+    accumulated_data_2 = []
+    event_logs_2 = []
+
+    # イベントストリームの処理
+    async for event in stream_2:
+        # イベントライフサイクルの処理（同期関数なのでawait不要）
+        lifecycle_msg = process_event_lifecycle(event, event_logs_2)
+        if lifecycle_msg:
+            yield lifecycle_msg
+
+        # ツール使用の処理（同期関数なのでawait不要）
+        tool_msg = process_tool_usage(event, event_logs_2)
+        if tool_msg:
+            yield tool_msg
+
+        # データチャンクの処理（同期関数なのでawait不要）
+        data_msg = process_data_chunk(event, accumulated_data_2)
+        if data_msg:
+            yield data_msg
+
+    # 最後にまとめて出力
+    full_response_2 = "".join(accumulated_data_2)
+    summary_2 = f"\n\n{'='*50}\n📊 最終結果のまとめ\n{'='*50}\n\n{full_response_2}\n\n{'='*50}\n"
+    print(summary_2)
+    yield summary_2
+
 # @app.entrypoint
 # def invoke(payload: dict, context: RequestContext):
 #     print("=== コールバックハンドラーありのエージェントの呼び出し ===\n")
