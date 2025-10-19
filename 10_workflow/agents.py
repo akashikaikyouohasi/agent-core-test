@@ -158,6 +158,68 @@ def workflow_test():
     #return "OK"
 
 
+def process_event_lifecycle(event: dict, event_logs: list) -> str:
+    """イベントループのライフサイクルイベントを処理
+    
+    Note: I/O待機がないため、同期関数で十分
+    """
+    if event.get("init_event_loop", False):
+        msg = "🔄 Event loop initialized"
+        print(msg)
+        event_logs.append(msg)
+        return f"{msg}\n"
+    elif event.get("start_event_loop", False):
+        msg = "▶️ Event loop cycle starting"
+        print(msg)
+        event_logs.append(msg)
+        return f"{msg}\n"
+    elif "message" in event:
+        msg = f"📬 New message created: {event['message']['role']}"
+        print(msg)
+        event_logs.append(msg)
+        return f"{msg}\n"
+    elif event.get("complete", False):
+        msg = "✅ Cycle completed"
+        print(msg)
+        event_logs.append(msg)
+        return f"{msg}\n"
+    elif event.get("force_stop", False):
+        msg = f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}"
+        print(msg)
+        event_logs.append(msg)
+        return f"{msg}\n"
+    return ""
+
+
+def process_tool_usage(event: dict, event_logs: list) -> str:
+    """ツール使用イベントを処理
+    
+    Note: I/O待機がないため、同期関数で十分
+    """
+    if "current_tool_use" in event and event["current_tool_use"].get("name"):
+        tool_name = event["current_tool_use"]["name"]
+        msg = f"🔧 Using tool: {tool_name}"
+        print(msg)
+        event_logs.append(msg)
+        return f"{msg}\n"
+    return ""
+
+
+def process_data_chunk(event: dict, accumulated_data: list) -> str:
+    """データチャンクを処理して蓄積
+    
+    Note: I/O待機がないため、同期関数で十分
+    """
+    if "data" in event:
+        accumulated_data.append(event["data"])
+        # Show only a snippet of text to keep output clean
+        data_snippet = event["data"][:20] + ("..." if len(event["data"]) > 20 else "")
+        msg = f"📟 Text: {data_snippet}"
+        print(msg)
+        return f"{msg}\n"
+    return ""
+
+
 @app.entrypoint
 async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str, None]:
     """Handler for agent invocation"""
@@ -192,6 +254,63 @@ async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str,
     #         print(event["message"], end="")
     #         yield event["message"]       # Stream message parts
     #========================================================================
+    # print("=== エージェントのストリーミング呼び出し by async ===\n") 
+    # streaming_agent = Agent(
+    #     model=bedrock_model
+    # )
+    # user_message = payload.get(
+    #     "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
+    # )
+    # stream = streaming_agent.stream_async(user_message)
+
+    # # ストリーミングデータを蓄積するための変数
+    # accumulated_data = []
+    # event_logs = []
+
+    # async for event in stream:
+    #     # Track event loop lifecycle
+    #     if event.get("init_event_loop", False):
+    #         print("🔄 Event loop initialized")
+    #         event_logs.append("🔄 Event loop initialized")
+    #         yield "🔄 Event loop initialized\n"
+    #     elif event.get("start_event_loop", False):
+    #         print("▶️ Event loop cycle starting")
+    #         event_logs.append("▶️ Event loop cycle starting")
+    #         yield "▶️ Event loop cycle starting\n"
+    #     elif "message" in event:
+    #         print(f"📬 New message created: {event['message']['role']}")
+    #         event_logs.append(f"📬 New message created: {event['message']['role']}")
+    #         yield f"📬 New message created: {event['message']['role']}\n"
+    #     elif event.get("complete", False):
+    #         print("✅ Cycle completed")
+    #         event_logs.append("✅ Cycle completed")
+    #         yield "✅ Cycle completed\n"
+    #     elif event.get("force_stop", False):
+    #         print(f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}")
+    #         event_logs.append(f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}")
+    #         yield f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}\n"
+
+    #     # Track tool usage
+    #     if "current_tool_use" in event and event["current_tool_use"].get("name"):
+    #         tool_name = event["current_tool_use"]["name"]
+    #         print(f"🔧 Using tool: {tool_name}")
+    #         event_logs.append(f"🔧 Using tool: {tool_name}")
+    #         yield f"🔧 Using tool: {tool_name}\n"
+
+    #     # データを蓄積
+    #     if "data" in event:
+    #         accumulated_data.append(event["data"])
+    #         # Show only a snippet of text to keep output clean
+    #         data_snippet = event["data"][:20] + ("..." if len(event["data"]) > 20 else "")
+    #         print(f"📟 Text: {data_snippet}")
+    #         yield f"📟 Text: {data_snippet}\n"
+
+    # # 最後にまとめて出力
+    # full_response = "".join(accumulated_data)
+    # summary = f"\n\n{'='*50}\n📊 最終結果のまとめ\n{'='*50}\n\n{full_response}\n\n{'='*50}\n"
+    # print(summary)
+    # yield summary
+    #========================================================================
     print("=== エージェントのストリーミング呼び出し by async ===\n") 
     streaming_agent = Agent(
         model=bedrock_model
@@ -205,51 +324,28 @@ async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str,
     accumulated_data = []
     event_logs = []
 
+    # イベントストリームの処理
     async for event in stream:
-        # Track event loop lifecycle
-        if event.get("init_event_loop", False):
-            print("🔄 Event loop initialized")
-            event_logs.append("🔄 Event loop initialized")
-            yield "🔄 Event loop initialized\n"
-        elif event.get("start_event_loop", False):
-            print("▶️ Event loop cycle starting")
-            event_logs.append("▶️ Event loop cycle starting")
-            yield "▶️ Event loop cycle starting\n"
-        elif "message" in event:
-            print(f"📬 New message created: {event['message']['role']}")
-            event_logs.append(f"📬 New message created: {event['message']['role']}")
-            yield f"📬 New message created: {event['message']['role']}\n"
-        elif event.get("complete", False):
-            print("✅ Cycle completed")
-            event_logs.append("✅ Cycle completed")
-            yield "✅ Cycle completed\n"
-        elif event.get("force_stop", False):
-            print(f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}")
-            event_logs.append(f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}")
-            yield f"🛑 Event loop force-stopped: {event.get('force_stop_reason', 'unknown reason')}\n"
+        # イベントライフサイクルの処理（同期関数なのでawait不要）
+        lifecycle_msg = process_event_lifecycle(event, event_logs)
+        if lifecycle_msg:
+            yield lifecycle_msg
 
-        # Track tool usage
-        if "current_tool_use" in event and event["current_tool_use"].get("name"):
-            tool_name = event["current_tool_use"]["name"]
-            print(f"🔧 Using tool: {tool_name}")
-            event_logs.append(f"🔧 Using tool: {tool_name}")
-            yield f"🔧 Using tool: {tool_name}\n"
+        # ツール使用の処理（同期関数なのでawait不要）
+        tool_msg = process_tool_usage(event, event_logs)
+        if tool_msg:
+            yield tool_msg
 
-        # データを蓄積
-        if "data" in event:
-            accumulated_data.append(event["data"])
-            # Show only a snippet of text to keep output clean
-            data_snippet = event["data"][:20] + ("..." if len(event["data"]) > 20 else "")
-            print(f"📟 Text: {data_snippet}")
-            yield f"📟 Text: {data_snippet}\n"
+        # データチャンクの処理（同期関数なのでawait不要）
+        data_msg = process_data_chunk(event, accumulated_data)
+        if data_msg:
+            yield data_msg
 
     # 最後にまとめて出力
     full_response = "".join(accumulated_data)
     summary = f"\n\n{'='*50}\n📊 最終結果のまとめ\n{'='*50}\n\n{full_response}\n\n{'='*50}\n"
     print(summary)
     yield summary
-    #========================================================================
-
 
 # @app.entrypoint
 # def invoke(payload: dict, context: RequestContext):
@@ -271,6 +367,8 @@ async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str,
     
 #     # クライアント側に返す
 #     return message_content
+
+
 
 
 
