@@ -58,9 +58,33 @@ bedrock_model = BedrockModel(
 
 agent = Agent(
     model=bedrock_model,
-    tools=[workflow]
+    #tools=[workflow]
     #tools=[calculator, current_time, letter_counter, workflow, *get_tools()]
 )
+
+def event_loop_tracker(**kwargs):
+    # Track event loop lifecycle
+    if kwargs.get("init_event_loop", False):
+        print("🔄 Event loop initialized")
+    elif kwargs.get("start_event_loop", False):
+        print("▶️ Event loop cycle starting")
+    elif "message" in kwargs:
+        print(f"📬 New message created: {kwargs['message']['role']}")
+    elif kwargs.get("complete", False):
+        print("✅ Cycle completed")
+    elif kwargs.get("force_stop", False):
+        print(f"🛑 Event loop force-stopped: {kwargs.get('force_stop_reason', 'unknown reason')}")
+
+    # Track tool usage
+    if "current_tool_use" in kwargs and kwargs["current_tool_use"].get("name"):
+        tool_name = kwargs["current_tool_use"]["name"]
+        print(f"🔧 Using tool: {tool_name}")
+
+    # Show only a snippet of text to keep output clean
+    if "data" in kwargs:
+        # Only show first 20 chars of each chunk for demo purposes
+        data_snippet = kwargs["data"][:20] + ("..." if len(kwargs["data"]) > 20 else "")
+        print(f"📟 Text: {data_snippet}")
 
 def local_test():
     """Local test function to invoke the agent directly"""
@@ -118,9 +142,9 @@ def workflow_test():
     print(f"Workflow Status: {status}")
 
 # エージェントを呼び出すエントリポイント関数を指定します
-@app.entrypoint
-async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str, None]:
-    """Handler for agent invocation"""
+#@app.entrypoint
+# def invoke(payload: dict, context: RequestContext):
+#    """Handler for agent invocation"""
     # print("=== 同期エージェントの呼び出し ===\n") 
     # user_message = payload.get(
     #     "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
@@ -133,24 +157,65 @@ async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str,
     #workflow_test()
     #return "OK"
 
-    print("=== エージェントのストリーミング呼び出し by async ===\n") 
-    streaming_agent = Agent(
+
+#@app.entrypoint
+#async def invoke(payload: dict, context: RequestContext) ->  AsyncGenerator[str, None]:
+#    """Handler for agent invocation"""
+    # print("=== 同期エージェントの呼び出し ===\n") 
+    # user_message = payload.get(
+    #     "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
+    # )
+    # result = agent(user_message)
+    # # result.message が文字列の場合とオブジェクトの場合に対応
+    # message_content = result.message if isinstance(result.message, str) else str(result.message)
+    #return {"result": message_content}
+
+    #workflow_test()
+    #return "OK"
+
+    #========================================================================
+    # print("=== エージェントのストリーミング呼び出し by async ===\n") 
+    # streaming_agent = Agent(
+    #     model=bedrock_model,
+    #     tools=[workflow]
+    # )
+    # user_message = payload.get(
+    #     "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
+    # )
+    # stream = streaming_agent.stream_async(user_message)
+
+    # async for event in stream:
+    #     if "data" in event:
+    #         print(event["data"], end="")
+    #         yield event["data"]          # Stream data chunks
+    #     elif "message" in event:
+    #         print(event["message"], end="")
+    #         yield event["message"]       # Stream message parts
+    #========================================================================
+
+
+@app.entrypoint
+def invoke(payload: dict, context: RequestContext):
+    print("=== コールバックハンドラーありのエージェントの呼び出し ===\n")
+    agent_with_all_callback = Agent(
         model=bedrock_model,
-        tools=[workflow]
+        callback_handler=event_loop_tracker
     )
     user_message = payload.get(
         "prompt", "No prompt found in input, please guide customer to create a json payload with prompt key"
     )
-    stream = streaming_agent.stream_async(user_message)
-
-    async for event in stream:
-        if "data" in event:
-            print(event["data"], end="")
-            yield event["data"]          # Stream data chunks
-        elif "message" in event:
-            print(event["message"], end="")
-            yield event["message"]       # Stream message parts
     
+    # 同期実行して結果を取得
+    result = agent_with_all_callback(user_message)
+    print(f"サーバー側の結果: {result}")  # サーバー側コンソールに表示
+    
+    # result.messageを文字列に変換
+    message_content = result.message if isinstance(result.message, str) else str(result.message)
+    
+    # クライアント側に返す
+    return message_content
+
+
 
 if __name__ == "__main__":
     app.run()
