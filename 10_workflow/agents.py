@@ -8,6 +8,7 @@ from strands.models import BedrockModel
 
 # tools.py からのインポート例
 from tools.weather import get_tools
+from tools.prime_number import get_tools
 
 # AgentCore SDK をインポートします
 from bedrock_agentcore.runtime import BedrockAgentCoreApp, RequestContext
