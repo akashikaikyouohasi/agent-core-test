@@ -124,10 +124,10 @@ agentcore-local-test: check-venv
 	fi
 	@echo "AgentCoreのローカルテストを開始..."
 	@echo ""
-	@echo "⏱️  テスト1: １たす１は？"
+	@echo "⏱️  テスト1: １たす１は２になる理由を千文字で解説して"
 	@date +"%Y-%m-%d %H:%M:%S"
 	@START=$$(date +%s); \
-	${AGENTCORE} invoke --local '{"prompt": "１たす１は？"}'; \
+	${AGENTCORE} invoke --local '{"prompt": "１たす１は２になる理由を千文字で解説して"}'; \
 	END=$$(date +%s); \
 	DURATION=$$((END - START)); \
 	echo ""; \
@@ -140,19 +140,7 @@ agentcore-local-test: check-venv
 #	DURATION=$$((END - START)); \
 #	echo ""; \
 #	echo "⏱️  実行時間: $${DURATION}秒"
-agentcore-local-test-workflow: check-venv
-	@echo "📡 ローカルサーバー(localhost:8080)の接続を確認中..."
-	@if curl -s http://localhost:8080/health > /dev/null 2>&1 || nc -z localhost 8080 > /dev/null 2>&1; then \
-		echo "✅ ローカルサーバーが起動しています"; \
-	else \
-		echo "❌ ローカルサーバーが起動していません"; \
-		echo ""; \
-		echo "別のターミナルで以下を実行してサーバーを起動してください:"; \
-		echo "  make agentcore-local"; \
-		exit 1; \
-	fi
-	@echo "AgentCoreのworkflowのローカルテストを開始..."
-	${AGENTCORE} invoke --local '{"prompt": "四半期のレポートを生成してください。"}'
+
 agentcore-deploy: check-venv
 	@echo "AgentCoreへのデプロイを開始..."
 	agent${AGENTCORE}core launch

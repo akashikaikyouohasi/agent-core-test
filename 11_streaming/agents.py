@@ -1,11 +1,18 @@
 import logging
 import asyncio
+from typing import AsyncGenerator
 from strands import Agent, tool
 from strands.models import BedrockModel
 from dotenv import load_dotenv
 
+# AgentCore SDK をインポート
+from bedrock_agentcore.runtime import BedrockAgentCoreApp, RequestContext
+
 # .envファイルから環境変数をロード（もしあれば）
 load_dotenv()
+
+# AgentCore アプリケーションを作成
+app = BedrockAgentCoreApp()
 
 # ログ設定
 logging.getLogger("strands").setLevel(logging.DEBUG)
@@ -80,51 +87,11 @@ def text_analyzer(text: str) -> str:
 """
 
 
-def process_streaming_event(event: dict) -> str:
-    """ストリーミング中のイベントを処理する関数"""
-    output = ""
-    
-    # イベントループのトラッキング
-    if event.get("init_event_loop", False):
-        msg = "🔄 イベントループ初期化"
-        print(f"\n{msg}")
-        output += f"\n{msg}\n"
-    elif event.get("start_event_loop", False):
-        msg = "▶️  イベントループサイクル開始"
-        print(f"\n{msg}")
-        output += f"\n{msg}\n"
-    elif "message" in event:
-        msg = f"📬 新しいメッセージ作成: {event['message']['role']}"
-        print(f"\n{msg}")
-        output += f"\n{msg}\n"
-    elif event.get("complete", False):
-        msg = "✅ サイクル完了"
-        print(f"\n{msg}")
-        output += f"\n{msg}\n"
-    elif event.get("force_stop", False):
-        msg = f"🛑 イベントループ強制停止: {event.get('force_stop_reason', '不明な理由')}"
-        print(f"\n{msg}")
-        output += f"\n{msg}\n"
-    
-    # ツール使用のトラッキング
-    if "current_tool_use" in event and event["current_tool_use"].get("name"):
-        tool_name = event["current_tool_use"]["name"]
-        msg = f"🔧 ツール使用中: {tool_name}"
-        print(f"\n{msg}")
-        output += f"\n{msg}\n"
-    
-    # テキストストリーミング
-    if "data" in event:
-        # ストリーミングデータを表示（改行なし）
-        print(event["data"], end="", flush=True)
-        output += event["data"]
-    
-    return output
-
-
-async def test_streaming():
-    """ストリーミングレスポンスのテスト（非同期イテレータ使用）"""
-    print("=== Strands エージェント - ストリーミングレスポンステスト ===\n")
+# AgentCore用のエントリーポイント
+@app.entrypoint
+async def invoke(payload: dict, context: RequestContext) -> AsyncGenerator[str, None]:
+    """AgentCore用のハンドラー（ストリーミング対応）"""
+    print("=== AgentCore経由でのストリーミング呼び出し ===\n")
     
     # BedrockModelの作成
     bedrock_model = BedrockModel(
@@ -134,106 +101,79 @@ async def test_streaming():
     )
     
     # エージェントの作成（ツール付き）
-    agent = Agent(
+    streaming_agent = Agent(
         model=bedrock_model,
         tools=[weather_tool, calculator, text_analyzer]
     )
     
-    # テストメッセージ
-    message = """
-    以下の3つのタスクを実行してください:
-    
-    1. 東京の天気を教えてください
-    2. 123 × 456 を計算してください
-    3. 「こんにちは、世界！これはストリーミングテストです。」というテキストを分析してください
-    
-    それぞれの結果を日本語で説明してください。
-    """
-    
-    print(f"質問: {message}\n")
-    print("=" * 80)
-    print("📡 ストリーミングレスポンス開始...\n")
-    
-    # stream_async()を使って非同期イテレータを取得
-    accumulated_data = []
-    
-    async for event in agent.stream_async(message):
-        # イベントを処理（画面に表示）
-        process_streaming_event(event)
-        
-        # データを蓄積
-        if "data" in event:
-            accumulated_data.append(event["data"])
-    
-    # 最終結果を表示
-    full_response = "".join(accumulated_data)
-    print("\n\n" + "=" * 80)
-    print("✅ ストリーミング完了")
-    print("=" * 80)
-    print(f"\n📊 最終結果:\n{full_response}\n")
-    
-    return full_response
-
-
-async def test_simple_streaming():
-    """シンプルなストリーミングテスト（ツールなし、非同期イテレータ使用）"""
-    print("=== シンプルなストリーミングテスト ===\n")
-    
-    # BedrockModelの作成
-    bedrock_model = BedrockModel(
-        model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
-        region_name="us-west-2",
-        temperature=0.7,
+    # ユーザーメッセージを取得
+    user_message = payload.get(
+        "prompt", 
+        "No prompt found in input, please provide a 'prompt' key in the payload"
     )
     
-    # エージェントの作成（ツールなし）
-    agent = Agent(
-        model=bedrock_model
-    )
+    print(f"質問: {user_message}\n")
     
-    message = "日本の有名な観光地を3つ紹介して、それぞれについて簡単に説明してください。"
-    
-    print(f"質問: {message}\n")
-    print("=" * 80)
-    print("📡 ストリーミングレスポンス開始...\n")
-    
-    # stream_async()を使って非同期イテレータを取得
+    # ストリーミングデータを蓄積
     accumulated_data = []
+    event_logs = []
     
-    async for event in agent.stream_async(message):
-        # イベントを処理（画面に表示）
-        process_streaming_event(event)
+    # ストリーミング処理
+    async for event in streaming_agent.stream_async(user_message):
+        # イベントライフサイクルの処理
+        if event.get("init_event_loop", False):
+            msg = "🔄 イベントループ初期化\n"
+            print(msg, end="")
+            event_logs.append(msg)
+            yield msg
+        elif event.get("start_event_loop", False):
+            msg = "▶️  イベントループサイクル開始\n"
+            print(msg, end="")
+            event_logs.append(msg)
+            yield msg
+        elif "message" in event:
+            msg = f"📬 新しいメッセージ作成: {event['message']['role']}\n"
+            print(msg, end="")
+            event_logs.append(msg)
+            yield msg
+        elif event.get("complete", False):
+            msg = "✅ サイクル完了\n"
+            print(msg, end="")
+            event_logs.append(msg)
+            yield msg
+        elif event.get("force_stop", False):
+            msg = f"🛑 イベントループ強制停止: {event.get('force_stop_reason', '不明な理由')}\n"
+            print(msg, end="")
+            event_logs.append(msg)
+            yield msg
         
-        # データを蓄積
+        # ツール使用の処理
+        if "current_tool_use" in event and event["current_tool_use"].get("name"):
+            tool_name = event["current_tool_use"]["name"]
+            msg = f"🔧 ツール使用中: {tool_name}\n"
+            print(msg, end="")
+            event_logs.append(msg)
+            yield msg
+        
+        # データチャンクの処理
         if "data" in event:
-            accumulated_data.append(event["data"])
+            data = event["data"]
+            accumulated_data.append(data)
+            print(data, end="", flush=True)
+            
+            data_snippet = event["data"][:20] + ("..." if len(event["data"]) > 20 else "")
+            msg = f"📟 Text: {data_snippet}"
+            print(msg)
+            #yield data
+            yield f"{msg}\n"
     
-    # 最終結果を表示
+    # 最終サマリーを出力
     full_response = "".join(accumulated_data)
-    print("\n\n" + "=" * 80)
-    print("✅ ストリーミング完了")
-    print("=" * 80)
-    print(f"\n📊 最終結果:\n{full_response}\n")
-    
-    return full_response
+    summary = f"\n\n{'='*80}\n✅ ストリーミング完了\n{'='*80}\n\n📊 最終結果:\n{full_response}\n\n{'='*80}\n"
+    print(summary)
+    yield summary
 
 
 if __name__ == "__main__":
-    async def main():
-        """メイン実行関数"""
-        try:
-            # ツール付きストリーミングテスト
-            await test_streaming()
-            
-            print("\n" + "=" * 80 + "\n")
-            
-            # シンプルなストリーミングテスト
-            await test_simple_streaming()
-            
-        except Exception as e:
-            print(f"\n❌ エラー: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    # 非同期関数を実行
-    asyncio.run(main())
+    # AgentCore サーバーを起動
+    app.run()

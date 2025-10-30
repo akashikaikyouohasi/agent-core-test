@@ -26,7 +26,7 @@ agents:
     bedrock_agentcore:
       agent_id: null
       agent_arn: null
-      agent_session_id: null
+      agent_session_id: c5dd7bc2-1d59-4e3f-b391-188ae843eabe
     codebuild:
       project_name: null
       execution_role: null
@@ -41,4 +41,6 @@ agents:
       was_created_by_toolkit: false
     authorizer_configuration: null
     request_header_configuration: null
-    oauth_configuration: null
+    oauth_configuration:
+      workload_name: workload-e542fe4f
+      userId: null
