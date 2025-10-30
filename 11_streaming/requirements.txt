@@ -1,0 +1,17 @@
+# AWS Bedrock AgentCore SDK
+bedrock-agentcore
+bedrock-agentcore-starter-toolkit
+
+# Strands Agennts
+strands-agents>=1.0.0
+strands-agents-tools>=0.2.0
+
+# AWS SDK
+boto3
+botocore
+
+# 環境変数管理
+python-dotenv
+
+# ユーティリティ
+pydantic
