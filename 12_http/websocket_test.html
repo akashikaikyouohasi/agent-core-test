@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .connection-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-connect {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-connect:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-disconnect {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-disconnect:hover:not(:disabled) {
+            background: #da190b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-send {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-send:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-clear {
+            background: #9e9e9e;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #757575;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .status.disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status.connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status.connecting {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status.disconnected .status-indicator {
+            background: #c62828;
+        }
+
+        .status.connected .status-indicator {
+            background: #2e7d32;
+        }
+
+        .status.connecting .status-indicator {
+            background: #ef6c00;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .messages-section {
+            margin-top: 30px;
+        }
+
+        .messages-container {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+
+        .message.sent {
+            background: #e3f2fd;
+            border-left-color: #2196F3;
+        }
+
+        .message.received {
+            background: #f1f8e9;
+            border-left-color: #8bc34a;
+        }
+
+        .message.error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+
+        .message.info {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .message-content {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .quick-action-btn {
+            padding: 10px;
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: left;
+            transition: all 0.3s;
+        }
+
+        .quick-action-btn:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .quick-action-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .quick-action-desc {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🔌 WebSocket Test Client</h1>
+            <p class="subtitle">AWS API Gateway WebSocket API テストツール</p>
+
+            <div class="connection-section">
+                <div class="status disconnected" id="status">
+                    <span class="status-indicator"></span>
+                    <span id="statusText">切断中</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="websocketUrl">WebSocket URL</label>
+                    <input 
+                        type="text" 
+                        id="websocketUrl" 
+                        placeholder="wss://xxxxx.execute-api.ap-northeast-1.amazonaws.com/dev"
+                        value="wss://"
+                    >
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-connect" id="connectBtn" onclick="connect()">
+                        📡 接続
+                    </button>
+                    <button class="btn-disconnect" id="disconnectBtn" onclick="disconnect()" disabled>
+                        🔌 切断
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="action">アクション</label>
+                <select id="action" onchange="updateMessageTemplate()">
+                    <option value="echo">Echo - メッセージをそのまま返す</option>
+                    <option value="uppercase">Uppercase - 大文字に変換</option>
+                    <option value="reverse">Reverse - 文字列を反転</option>
+                    <option value="timestamp">Timestamp - タイムスタンプを取得</option>
+                    <option value="custom">Custom - カスタムJSON</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="message">メッセージ (JSON形式)</label>
+                <textarea id="message" placeholder='{"action": "echo", "data": {"message": "Hello"}}'></textarea>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-send" id="sendBtn" onclick="sendMessage()" disabled>
+                    📤 送信
+                </button>
+                <button class="btn-clear" onclick="clearMessages()">
+                    🗑️ ログをクリア
+                </button>
+            </div>
+
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="quickAction('echo')">
+                    <div class="quick-action-title">📢 Echo Test</div>
+                    <div class="quick-action-desc">メッセージをそのまま返す</div>
+                </button>
+                <button class="quick-action-btn" onclick="quickAction('uppercase')">
+                    <div class="quick-action-title">🔠 Uppercase Test</div>
+                    <div class="quick-action-desc">テキストを大文字に変換</div>
+                </button>
+                <button class="quick-action-btn" onclick="quickAction('reverse')">
+                    <div class="quick-action-title">🔄 Reverse Test</div>
+                    <div class="quick-action-desc">テキストを反転</div>
+                </button>
+                <button class="quick-action-btn" onclick="quickAction('timestamp')">
+                    <div class="quick-action-title">⏰ Timestamp Test</div>
+                    <div class="quick-action-desc">現在時刻を取得</div>
+                </button>
+            </div>
+        </div>
+
+        <div class="card messages-section">
+            <h2 style="margin-bottom: 20px; color: #333;">📝 メッセージログ</h2>
+            <div class="messages-container" id="messages">
+                <div class="message info">
+                    <div class="message-header">
+                        <span>システム</span>
+                        <span>${new Date().toLocaleTimeString('ja-JP')}</span>
+                    </div>
+                    <div class="message-content">WebSocket URLを入力して「接続」をクリックしてください。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+
+        // 初期メッセージテンプレートを設定
+        updateMessageTemplate();
+
+        function updateStatus(status, text) {
+            const statusEl = document.getElementById('status');
+            const statusTextEl = document.getElementById('statusText');
+            
+            statusEl.className = `status ${status}`;
+            statusTextEl.textContent = text;
+        }
+
+        function addMessage(type, content, direction = '') {
+            const messagesContainer = document.getElementById('messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${type}`;
+            
+            const now = new Date().toLocaleTimeString('ja-JP');
+            const header = direction ? `${direction} - ${now}` : now;
+            
+            messageEl.innerHTML = `
+                <div class="message-header">
+                    <span>${type === 'sent' ? '送信' : type === 'received' ? '受信' : type === 'error' ? 'エラー' : '情報'}</span>
+                    <span>${now}</span>
+                </div>
+                <div class="message-content">${escapeHtml(content)}</div>
+            `;
+            
+            messagesContainer.appendChild(messageEl);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function connect() {
+            const url = document.getElementById('websocketUrl').value.trim();
+            
+            if (!url) {
+                alert('WebSocket URLを入力してください');
+                return;
+            }
+
+            if (!url.startsWith('wss://') && !url.startsWith('ws://')) {
+                alert('URLは wss:// または ws:// で始まる必要があります');
+                return;
+            }
+
+            try {
+                updateStatus('connecting', '接続中...');
+                addMessage('info', `接続試行中: ${url}`);
+                
+                ws = new WebSocket(url);
+
+                ws.onopen = function(event) {
+                    isConnected = true;
+                    updateStatus('connected', '接続済み');
+                    addMessage('info', '✓ WebSocketに接続しました');
+                    
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                };
+
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        const formatted = JSON.stringify(data, null, 2);
+                        addMessage('received', formatted);
+                    } catch (e) {
+                        addMessage('received', event.data);
+                    }
+                };
+
+                ws.onerror = function(error) {
+                    addMessage('error', 'WebSocketエラーが発生しました');
+                    console.error('WebSocket error:', error);
+                };
+
+                ws.onclose = function(event) {
+                    isConnected = false;
+                    updateStatus('disconnected', '切断中');
+                    addMessage('info', `接続が切断されました (Code: ${event.code})`);
+                    
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                    document.getElementById('sendBtn').disabled = true;
+                    ws = null;
+                };
+
+            } catch (error) {
+                updateStatus('disconnected', '切断中');
+                addMessage('error', `接続エラー: ${error.message}`);
+                console.error('Connection error:', error);
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                addMessage('info', '切断処理を実行しました');
+            }
+        }
+
+        function sendMessage() {
+            if (!ws || !isConnected) {
+                alert('WebSocketに接続していません');
+                return;
+            }
+
+            const messageText = document.getElementById('message').value.trim();
+            
+            if (!messageText) {
+                alert('メッセージを入力してください');
+                return;
+            }
+
+            try {
+                // JSON検証
+                const messageObj = JSON.parse(messageText);
+                
+                // 送信
+                ws.send(messageText);
+                
+                // ログに追加
+                const formatted = JSON.stringify(messageObj, null, 2);
+                addMessage('sent', formatted);
+                
+            } catch (error) {
+                alert('無効なJSON形式です: ' + error.message);
+            }
+        }
+
+        function clearMessages() {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = '';
+            addMessage('info', 'ログをクリアしました');
+        }
+
+        function updateMessageTemplate() {
+            const action = document.getElementById('action').value;
+            const messageTextarea = document.getElementById('message');
+            
+            let template = '';
+            
+            switch(action) {
+                case 'echo':
+                    template = JSON.stringify({
+                        "action": "echo",
+                        "data": {
+                            "message": "Hello WebSocket!",
+                            "timestamp": new Date().toISOString()
+                        }
+                    }, null, 2);
+                    break;
+                    
+                case 'uppercase':
+                    template = JSON.stringify({
+                        "action": "uppercase",
+                        "data": {
+                            "text": "hello world from websocket"
+                        }
+                    }, null, 2);
+                    break;
+                    
+                case 'reverse':
+                    template = JSON.stringify({
+                        "action": "reverse",
+                        "data": {
+                            "text": "Hello WebSocket"
+                        }
+                    }, null, 2);
+                    break;
+                    
+                case 'timestamp':
+                    template = JSON.stringify({
+                        "action": "timestamp",
+                        "data": {}
+                    }, null, 2);
+                    break;
+                    
+                case 'custom':
+                    template = JSON.stringify({
+                        "action": "your_action",
+                        "data": {
+                            "key": "value"
+                        }
+                    }, null, 2);
+                    break;
+            }
+            
+            messageTextarea.value = template;
+        }
+
+        function quickAction(action) {
+            document.getElementById('action').value = action;
+            updateMessageTemplate();
+            
+            if (isConnected) {
+                sendMessage();
+            } else {
+                alert('先にWebSocketに接続してください');
+            }
+        }
+
+        // Enter key to send (Ctrl+Enter)
+        document.getElementById('message').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Enter key to connect
+        document.getElementById('websocketUrl').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                connect();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -23,7 +23,7 @@ logging.basicConfig(
 )
 
 
-# カスタムツールの定義
+# カスタムツールの定義（ストリーミング対応）
 @tool
 def weather_tool(location: str) -> str:
     """
@@ -42,7 +42,9 @@ def weather_tool(location: str) -> str:
         "ニューヨーク": "雨、気温15度",
         "ロンドン": "曇り、気温12度",
     }
-    return weather_data.get(location, f"{location}の天気情報: 晴れのち曇り、気温18度")
+    result = weather_data.get(location, f"{location}の天気情報: 晴れのち曇り、気温18度")
+    
+    return f"🌤️ {location}の天気: {result}"
 
 
 @tool
@@ -59,9 +61,9 @@ def calculator(expression: str) -> str:
     try:
         # セキュリティのため、evalは実際のプロダクションでは避けるべき
         result = eval(expression, {"__builtins__": {}}, {})
-        return f"{expression} = {result}"
+        return f"🔢 計算結果: {expression} = {result}"
     except Exception as e:
-        return f"計算エラー: {str(e)}"
+        return f"❌ 計算エラー: {str(e)}"
 
 
 @tool
@@ -80,11 +82,7 @@ def text_analyzer(text: str) -> str:
     lines = text.split('\n')
     line_count = len(lines)
     
-    return f"""テキスト分析結果:
-- 文字数: {char_count}
-- 単語数: {word_count}
-- 行数: {line_count}
-"""
+    return f"📝 テキスト分析結果:\n- 文字数: {char_count}\n- 単語数: {word_count}\n- 行数: {line_count}"
 
 
 # AgentCore用のエントリーポイント
@@ -160,12 +158,7 @@ async def invoke(payload: dict, context: RequestContext) -> AsyncGenerator[str, 
             data = event["data"]
             accumulated_data.append(data)
             print(data, end="", flush=True)
-            
-            data_snippet = event["data"][:20] + ("..." if len(event["data"]) > 20 else "")
-            msg = f"📟 Text: {data_snippet}"
-            print(msg)
-            #yield data
-            yield f"{msg}\n"
+            yield data
     
     # 最終サマリーを出力
     full_response = "".join(accumulated_data)
