@@ -1,0 +1,18 @@
+# Example Terraform variables configuration
+
+# AWS Region
+aws_region = "ap-northeast-1"
+
+# Project name (will be used as prefix for resources)
+project_name = "websocket-lambda"
+
+# API Gateway stage name
+stage_name = "dev"
+
+# Option 1: Use Amazon Bedrock AgentCore Runtime
+# Uncomment and set your AgentCore Runtime ARN to use AgentCore
+# agentcore_runtime_arn = "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/my_agent-xxxxx"
+
+# Option 2: Use Custom Processor Lambda
+# Leave agentcore_runtime_arn commented out or set to "" to use custom processor
+agentcore_runtime_arn = ""

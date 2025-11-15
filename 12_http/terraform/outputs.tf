@@ -13,10 +13,10 @@ output "websocket_handler_function_name" {
   value       = aws_lambda_function.websocket_handler.function_name
 }
 
-output "processor_function_name" {
-  description = "Processor Lambda function name"
-  value       = aws_lambda_function.processor.function_name
-}
+# output "processor_function_name" {
+#   description = "Processor Lambda function name"
+#   value       = aws_lambda_function.processor.function_name
+# }
 
 output "websocket_url" {
   description = "WebSocket connection URL"

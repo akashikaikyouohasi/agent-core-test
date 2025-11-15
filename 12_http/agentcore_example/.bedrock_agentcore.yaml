@@ -1,0 +1,30 @@
+default_agent: websocketagent
+agents:
+  websocketagent:
+    name: websocketagent
+    entrypoint: agent.py
+    platform: linux/arm64
+    container_runtime: docker
+    aws:
+      execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKRuntime-ap-northeast-1-ecce4fed52
+      execution_role_auto_create: false
+      account: '206863353204'
+      region: ap-northeast-1
+      ecr_repository: 206863353204.dkr.ecr.ap-northeast-1.amazonaws.com/bedrock-agentcore-websocketagent
+      ecr_auto_create: false
+      network_configuration:
+        network_mode: PUBLIC
+      protocol_configuration:
+        server_protocol: HTTP
+      observability:
+        enabled: true
+    bedrock_agentcore:
+      agent_id: websocketagent-TCNFrUBi67
+      agent_arn: arn:aws:bedrock-agentcore:ap-northeast-1:206863353204:runtime/websocketagent-TCNFrUBi67
+      agent_session_id: null
+    codebuild:
+      project_name: bedrock-agentcore-websocketagent-builder
+      execution_role: arn:aws:iam::206863353204:role/AmazonBedrockAgentCoreSDKCodeBuild-ap-northeast-1-ecce4fed52
+      source_bucket: bedrock-agentcore-codebuild-sources-206863353204-ap-northeast-1
+    authorizer_configuration: null
+    oauth_configuration: null

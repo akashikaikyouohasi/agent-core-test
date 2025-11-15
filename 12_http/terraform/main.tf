@@ -55,30 +55,13 @@ resource "aws_lambda_function" "websocket_handler" {
   handler         = "app.lambda_handler"
   source_code_hash = data.archive_file.websocket_handler.output_base64sha256
   runtime         = "python3.11"
-  timeout         = 30
+  timeout         = 120  # AgentCore can take longer to respond
 
   environment {
     variables = {
-      PROCESSOR_FUNCTION_NAME = aws_lambda_function.processor.function_name
+      AGENTCORE_RUNTIME_ARN = var.agentcore_runtime_arn
     }
   }
-}
-
-# Lambda Function - Processor
-data "archive_file" "processor" {
-  type        = "zip"
-  source_dir  = "${path.module}/../lambda/processor"
-  output_path = "${path.module}/processor.zip"
-}
-
-resource "aws_lambda_function" "processor" {
-  filename         = data.archive_file.processor.output_path
-  function_name    = "${var.project_name}-processor"
-  role            = aws_iam_role.lambda_processor.arn
-  handler         = "app.lambda_handler"
-  source_code_hash = data.archive_file.processor.output_base64sha256
-  runtime         = "python3.11"
-  timeout         = 30
 }
 
 # CloudWatch Log Groups for Lambda
@@ -87,32 +70,9 @@ resource "aws_cloudwatch_log_group" "websocket_handler" {
   retention_in_days = 7
 }
 
-resource "aws_cloudwatch_log_group" "processor" {
-  name              = "/aws/lambda/${aws_lambda_function.processor.function_name}"
-  retention_in_days = 7
-}
-
 # IAM Role for WebSocket Handler Lambda
 resource "aws_iam_role" "lambda_websocket" {
   name = "${var.project_name}-lambda-websocket-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-# IAM Role for Processor Lambda
-resource "aws_iam_role" "lambda_processor" {
-  name = "${var.project_name}-lambda-processor-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -155,30 +115,9 @@ resource "aws_iam_role_policy" "lambda_websocket" {
       {
         Effect = "Allow"
         Action = [
-          "lambda:InvokeFunction"
+          "bedrock-agentcore:InvokeAgentRuntime"
         ]
-        Resource = aws_lambda_function.processor.arn
-      }
-    ]
-  })
-}
-
-# IAM Policy for Processor Lambda
-resource "aws_iam_role_policy" "lambda_processor" {
-  name = "${var.project_name}-lambda-processor-policy"
-  role = aws_iam_role.lambda_processor.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = "${var.agentcore_runtime_arn}*"
       }
     ]
   })

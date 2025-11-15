@@ -15,3 +15,8 @@ variable "stage_name" {
   type        = string
   default     = "dev"
 }
+
+variable "agentcore_runtime_arn" {
+  description = "Amazon Bedrock AgentCore Runtime ARN (e.g., arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/my_agent-xxxxx)"
+  type        = string
+}

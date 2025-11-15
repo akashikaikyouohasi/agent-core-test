@@ -350,6 +350,7 @@
             <div class="input-group">
                 <label for="action">アクション</label>
                 <select id="action" onchange="updateMessageTemplate()">
+                    <option value="agentcore">AgentCore - AIエージェントに質問</option>
                     <option value="echo">Echo - メッセージをそのまま返す</option>
                     <option value="uppercase">Uppercase - 大文字に変換</option>
                     <option value="reverse">Reverse - 文字列を反転</option>
@@ -373,6 +374,10 @@
             </div>
 
             <div class="quick-actions">
+                <button class="quick-action-btn" onclick="quickAction('agentcore')">
+                    <div class="quick-action-title">🤖 AgentCore Test</div>
+                    <div class="quick-action-desc">AIエージェントに質問</div>
+                </button>
                 <button class="quick-action-btn" onclick="quickAction('echo')">
                     <div class="quick-action-title">📢 Echo Test</div>
                     <div class="quick-action-desc">メッセージをそのまま返す</div>
@@ -558,6 +563,13 @@
             let template = '';
             
             switch(action) {
+                case 'agentcore':
+                    template = JSON.stringify({
+                        "prompt": "こんにちは！あなたは何ができますか？",
+                        "sessionId": "session-" + Date.now()
+                    }, null, 2);
+                    break;
+                    
                 case 'echo':
                     template = JSON.stringify({
                         "action": "echo",
