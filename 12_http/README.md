@@ -121,6 +121,8 @@ Amazon Bedrock AgentCore Runtime
 │   └── README.md
 ├── websocket_test.html          # ブラウザベーステストUI
 ├── websocket_test.http          # VS Code REST Client用テスト
+├── test_agentcore_direct.py     # HTTPエンドポイント直接アクセステスト（Python）
+├── test_agentcore_direct.sh     # HTTPエンドポイント直接アクセステスト（Bash）
 └── README.md
 ```
 
@@ -433,6 +435,171 @@ Lambda関数のIAMロールには以下の権限が必要です：
    ```bash
    aws logs tail /aws/lambda/websocket-lambda-websocket-handler --follow --region ap-northeast-1
    ```
+
+## AgentCore RuntimeのHTTPエンドポイント直接アクセス
+
+### 概要
+
+WebSocketを使わずに、AgentCore RuntimeのHTTPエンドポイントに直接アクセスすることもできます。これは、バッチ処理や単発のリクエストに便利です。
+
+### エンドポイント形式
+
+```
+POST https://bedrock-agentcore.{region}.amazonaws.com/runtimes/{URLエンコードされたARN}/invocations
+```
+
+### 認証
+
+AWS Signature Version 4 (SigV4) 認証が必要です。Bearerトークンではなく、AWS認証情報を使用します。
+
+### リクエスト形式
+
+**ヘッダー:**
+```
+Content-Type: application/json
+X-Amzn-Bedrock-AgentCore-Runtime-Session-Id: {33-64文字のセッションID}
+Authorization: AWS4-HMAC-SHA256 Credential=...
+```
+
+**ペイロード:**
+```json
+{
+  "prompt": "あなたのメッセージ",
+  "sessionId": "session-id-minimum-33-chars"
+}
+```
+
+### テスト方法
+
+#### Python スクリプト（推奨）
+
+`test_agentcore_direct.py` を使用：
+
+```bash
+# 必要なライブラリをインストール
+pip install boto3 requests requests-aws4auth
+
+# テスト実行
+python3 test_agentcore_direct.py
+```
+
+**実行例:**
+```
+============================================================
+AgentCore Runtime Direct API Test (Python)
+============================================================
+Agent ARN: arn:aws:bedrock-agentcore:ap-northeast-1:206863353204:runtime/websocketagent-TCNFrUBi67
+Region: ap-northeast-1
+Session ID: test-session-20251116022816000000000 (length: 36)
+============================================================
+
+✓ AWS認証情報を取得しました
+Endpoint: https://bedrock-agentcore.ap-northeast-1.amazonaws.com/runtimes/...
+
+Request Payload:
+{
+  "prompt": "こんにちは！あなたは何ができますか？",
+  "sessionId": "test-session-20251116022816000000000"
+}
+
+Sending POST request...
+
+Status Code: 200
+
+✓ リクエスト成功！
+```
+
+#### awscurl を使用
+
+```bash
+# awscurlのインストール
+pip install awscurl
+
+# エンドポイント設定
+AGENT_ARN="arn:aws:bedrock-agentcore:ap-northeast-1:123456789012:runtime/your-agent-xxxxx"
+ENCODED_ARN=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${AGENT_ARN}', safe=''))")
+ENDPOINT="https://bedrock-agentcore.ap-northeast-1.amazonaws.com/runtimes/${ENCODED_ARN}/invocations"
+SESSION_ID="test-session-$(date +%s)000000000000000000000"
+
+# リクエスト送信
+awscurl --service bedrock-agentcore \
+  --region ap-northeast-1 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-Amzn-Bedrock-AgentCore-Runtime-Session-Id: ${SESSION_ID}" \
+  -d '{"prompt": "こんにちは！", "sessionId": "'${SESSION_ID}'"}' \
+  "${ENDPOINT}"
+```
+
+#### Python コード例
+
+```python
+import json
+import urllib.parse
+import boto3
+import requests
+from requests_aws4auth import AWS4Auth
+
+# AWS認証情報を取得
+session = boto3.Session(region_name='ap-northeast-1')
+credentials = session.get_credentials()
+
+# AWS SigV4 認証
+auth = AWS4Auth(
+    credentials.access_key,
+    credentials.secret_key,
+    'ap-northeast-1',
+    'bedrock-agentcore',
+    session_token=credentials.token
+)
+
+# エンドポイント
+agent_arn = 'arn:aws:bedrock-agentcore:ap-northeast-1:123456789012:runtime/your-agent-xxxxx'
+encoded_arn = urllib.parse.quote(agent_arn, safe='')
+url = f'https://bedrock-agentcore.ap-northeast-1.amazonaws.com/runtimes/{encoded_arn}/invocations'
+
+# リクエスト
+payload = {
+    'prompt': 'こんにちは！',
+    'sessionId': 'test-session-12345678901234567890123'
+}
+
+headers = {
+    'Content-Type': 'application/json',
+    'X-Amzn-Bedrock-AgentCore-Runtime-Session-Id': payload['sessionId']
+}
+
+response = requests.post(url, json=payload, headers=headers, auth=auth)
+print(json.dumps(response.json(), indent=2, ensure_ascii=False))
+```
+
+### レスポンス
+
+成功時（Status Code: 200）:
+```json
+"こんにちは！私はClaudeというAIアシスタントです。以下のようなことでお手伝いできます：\n\n## 主な機能\n- **質問への回答**..."
+```
+
+エラー時:
+```json
+{
+  "message": "エラーメッセージ"
+}
+```
+
+### 重要な注意点
+
+1. **セッションID**: 33-64文字である必要があります
+2. **ARNのエンコード**: URLエンコードが必須（`/`や`:`を含むため）
+3. **タイムアウト**: レスポンスに時間がかかる場合があります（最大120秒推奨）
+4. **IAM権限**: `bedrock-agentcore:InvokeAgentRuntime` 権限が必要
+
+### ユースケース
+
+- **バッチ処理**: 複数のリクエストを順次処理
+- **cron ジョブ**: 定期的なタスク実行
+- **テスト**: 開発中のAgent動作確認
+- **統合**: 既存のHTTPベースのシステムとの連携
 
 ## カスタマイズ
 
